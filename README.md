@@ -4,7 +4,7 @@
 
 A stack of self-hosted media managers and streamer along with VPN. 
 
-Stack include VPN, Radarr, Sonarr, Prowlarr, qBittorrent, Jellyseerr and Jellyfin.
+Stack include VPN, Radarr, Sonarr, Prowlarr, Deluge, Jellyseerr and Jellyfin.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ docker network create --subnet 172.20.0.0/16 mynetwork
 
 **Deploy the stack with VPN**
 
-If VPN is enabled, qBittorrent and Prowlarr will be put behind VPN.
+If VPN is enabled, Deluge and Prowlarr will be put behind VPN.
 
 By default, NordVPN is used in `docker-compose.yml` file. This can be updated to use ExpressVPN, SurfShark, ProtonVPN, Custom OpenVPN or Wireguard VPN. It uses OpenVPN type for all the providers. 
 
@@ -67,16 +67,16 @@ docker compose --profile no-vpn up -d
 # docker compose -f docker-compose-nginx.yml up -d # OPTIONAL to use Nginx as reverse proxy
 ```
 
-## Configure qBittorrent
+## Configure Deluge
 
-- Open qBitTorrent at http://localhost:5080. Default username is `admin`. Temporary password can be collected from container log `docker logs qbittorrent`
-- Go to Tools --> Options --> WebUI --> Change password
+- Open Deluge at http://localhost:8112. Default password is `deluge`.
+- Go to Preferences --> Interface --> WebUI Password --> Change password
 - Run below commands on the server
 
 ```bash
-docker exec -it qbittorrent bash # Get inside qBittorrent container
+docker exec -it deluge bash # Get inside Deluge container
 
-# Above command will get you inside qBittorrent interactive terminal, Run below command in qbt terminal
+# Above command will get you inside Deluge interactive terminal, Run below command in deluge terminal
 mkdir /downloads/movies /downloads/tvshows
 chown 1000:1000 /downloads/movies /downloads/tvshows
 ```
@@ -85,7 +85,7 @@ chown 1000:1000 /downloads/movies /downloads/tvshows
 
 - Open Radarr at http://localhost:7878
 - Settings --> Media Management --> Check mark "Movies deleted from disk are automatically unmonitored in Radarr" under File management section --> Save
-- Settings --> Download clients --> qBittorrent --> Add Host (qbittorrent) and port (5080) --> Username and password --> Test --> Save **Note: If VPN is enabled, then qbittorrent is reachable on vpn's service name. In this case use `vpn` in Host field.**
+- Settings --> Download clients --> Deluge --> Add Host (Deluge) and port (8112) --> Username and password --> Test --> Save **Note: If VPN is enabled, then Deluge is reachable on vpn's service name. In this case use `vpn` in Host field.**
 - Settings --> General --> Enable advance setting --> Select Authentication and add username and password
 - Indexer will get automatically added during configuration of Prowlarr. See 'Configure Prowlarr' section.
 
@@ -95,7 +95,7 @@ Sonarr can also be configured in similar way.
 
 - Movies --> Search for a movie --> Add Root folder (/downloads/movies) --> Quality profile --> Add movie
 - All queued movies download can be checked here, Activities --> Queue 
-- Go to qBittorrent (http://localhost:5080) and see if movie is getting downloaded (After movie is queued. This depends on availability of movie in indexers configured in Prowlarr.)
+- Go to Deluge (http://localhost:8112) and see if movie is getting downloaded (After movie is queued. This depends on availability of movie in indexers configured in Prowlarr.)
 
 ## Configure Jellyfin
 
@@ -113,7 +113,8 @@ Sonarr can also be configured in similar way.
 
 - Open Prowlarr at http://localhost:9696
 - Settings --> General --> Authentications --> Select Authentication and add username and password
-- Add Indexers, Indexers --> Add Indexer --> Search for indexer --> Choose base URL --> Test and Save
+- Settings --> Indexers --> Add Flaresolverr --> Tags "flaresolverr" --> Host (http://flaresolverr:8191) --> Test and Save
+- Add Indexers, Indexers --> Add Indexer --> Search for indexer --> Choose base URL --> Test and Save (If test fails, add "flaresolverr" to tags and try again)
 - Add application, Settings --> Apps --> Add application --> Choose Radarr --> Prowlarr server (http://prowlarr:9696) --> Radarr server (http://radarr:7878) --> API Key --> Test and Save
 - Add application, Settings --> Apps --> Add application --> Choose Sonarr --> Prowlarr server (http://prowlarr:9696) --> Sonarr server (http://sonarr:8989) --> API Key --> Test and Save
 - This will add indexers in respective apps automatically.
@@ -197,23 +198,23 @@ location /prowlarr {
 
 **Note: If VPN is enabled, then Prowlarr is reachable on vpn's service name**
 
-## qBittorrent Nginx proxy
+## Deluge Nginx proxy
 
 ```
 location /qbt/ {
-    proxy_pass         http://qbittorrent:5080/; # Comment this line if VPN is enabled.
-    # proxy_pass         http://vpn:5080/; # Uncomment this line if VPN is enabled.
+    proxy_pass         http://Deluge:8112/; # Comment this line if VPN is enabled.
+    # proxy_pass         http://vpn:8112/; # Uncomment this line if VPN is enabled.
     proxy_http_version 1.1;
 
-    proxy_set_header   Host               http://qbittorrent:5080; # Comment this line if VPN is enabled.
-    # proxy_set_header   Host               http://vpn:5080; # Uncomment this line if VPN is enabled.
+    proxy_set_header   Host               http://Deluge:8112; # Comment this line if VPN is enabled.
+    # proxy_set_header   Host               http://vpn:8112; # Uncomment this line if VPN is enabled.
     proxy_set_header   X-Forwarded-Host   $http_host;
     proxy_set_header   X-Forwarded-For    $remote_addr;
     proxy_cookie_path  /                  "/; Secure";
 }
 ```
 
-**Note: If VPN is enabled, then qbittorrent is reachable on vpn's service name**
+**Note: If VPN is enabled, then Deluge is reachable on vpn's service name**
 
 ## Jellyfin Nginx proxy
 

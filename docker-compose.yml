@@ -57,39 +57,25 @@ services:
     #   - 9696:9696
     restart: "unless-stopped"
 
-  ## Default credentials of qBittorrent - Username: admin password: adminadmin ##
-  ## Change password after install from UI --> Tools --> Options --> WebUI ##
-  qbittorrent:
-    profiles: ["vpn", "no-vpn"]
-    container_name: qbittorrent
-    image: lscr.io/linuxserver/qbittorrent:4.6.5
-
-    # Unomment below if vpn is enabled
-    # depends_on:               # Uncomment this line if vpn is enabled
-    #   - vpn                   # Uncomment this line if vpn is enabled
-
-    # Comment below lines if VPN is enabled
-    networks:               # Comment this line if vpn is enabled
-      - mynetwork           # Comment this line if vpn is enabled
-
-    # Unomment below line if vpn is enabled
-    # network_mode: service:vpn
-
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    networks:
+      - mynetwork 
+    container_name: deluge
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=UTC
-      - WEBUI_PORT=5080
+      - TZ=Etc/UTC
+      - DELUGE_LOGLEVEL=error #optional
     volumes:
-      - qbittorrent-config:/config
+      - deluge-config:/config
       - torrent-downloads:/downloads
-
-    ## Comment/Disable below ports if VPN is enabled
     ports:
-      - 5080:5080
+      - 8112:8112
       - 6881:6881
       - 6881:6881/udp
-    restart: "unless-stopped"
+      - 58846:58846 #optional
+    restart: unless-stopped
 
   radarr:
     profiles: ["vpn", "no-vpn"]
@@ -154,6 +140,19 @@ services:
     ports:
       - 9696:9696
     restart: unless-stopped
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+    networks:
+      - mynetwork
 
   jellyseerr:
     profiles: ["vpn", "no-vpn"]
@@ -230,6 +229,7 @@ volumes:
   prowlarr-config:
   jellyfin-config:
   qbittorrent-config:
+  deluge-config:
   jellyseerr-config:
   # cleanmyarr-config:
 
